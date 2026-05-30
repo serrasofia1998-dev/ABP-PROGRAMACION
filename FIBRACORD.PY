@@ -78,14 +78,27 @@ while sistema_activo:
                 fecha_visita = f3.strftime('%Y-%m-%d')
                 
             try:
-                # 1. Insertamos en la tabla clientes
-                query_cli = "INSERT INTO clientes (dni, nombre, apellido, correo, fecha_nacimiento, numero_contacto) VALUES (%s, %s, %s, %s, %s, %s)"
-                cursor.execute(query_cli, (dni, nombre, apellido, correo, fecha_nacimiento, numero_contacto))
+                # 1. Verificamos si el cliente ya existe en la tabla clientes
+                query_verificar_cliente = "SELECT dni FROM clientes WHERE dni = %s"
+                cursor.execute(query_verificar_cliente, (dni,))
+                cliente_existente = cursor.fetchone()
+
+                # 2. Si el cliente NO existe, lo insertamos en la tabla clientes
                 
-                # 2. Insertamos en la tabla solicitudes
-                query_sol = """INSERT INTO solicitudes (dni_cliente, id_barrio, id_servicio, calle, numero, piso_dpto, tipo_solicitud, fecha_visita) 
-                               VALUES (%s, %s, %s, %s, %s, %s, 'Alta', %s)"""
-                cursor.execute(query_sol, (dni, id_barrio, id_servicio, calle, numero, piso_dpto, fecha_visita))
+                if cliente_existente is None:
+                    query_cli = """INSERT INTO clientes 
+                   (dni, nombre, apellido, correo, fecha_nacimiento, numero_contacto) 
+                   VALUES (%s, %s, %s, %s, %s, %s)"""
+                    cursor.execute(query_cli, (dni, nombre, apellido, correo, fecha_nacimiento, numero_contacto))
+                
+                else:
+                    print("\nℹ️ El cliente ya existe en la base de datos. Se asociará una nueva solicitud a su DNI.")
+
+                    # 3. Insertamos siempre una nueva solicitud de servicio
+                    query_sol = """INSERT INTO solicitudes 
+                (dni_cliente, id_barrio, id_servicio, calle, numero, piso_dpto, tipo_solicitud, fecha_visita) 
+                VALUES (%s, %s, %s, %s, %s, %s, 'Alta', %s)"""
+                    cursor.execute(query_sol, (dni, id_barrio, id_servicio, calle, numero, piso_dpto, fecha_visita))
                 
                 # Guardamos los cambios usando la variable real: db (CORREGIDO)
                 db.commit()
